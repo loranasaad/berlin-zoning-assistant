@@ -25,7 +25,7 @@ CRS: EPSG:25833 (required by all GDI Berlin servers)
 import logging
 import math
 import requests
-from geopy.geocoders import Nominatim
+from geopy.geocoders import Photon
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from data.zoning_rules import ZONE_KEYWORDS, FNP_ZONE_MAP
 
@@ -108,7 +108,7 @@ def _wgs84_to_epsg25833(lat: float, lon: float) -> tuple[float, float]:
 
 # Geocoding
 def _geocode(address: str) -> dict:
-	geolocator = Nominatim(user_agent="berlin_zoning_assistant_v2")
+	geolocator = Photon(user_agent="berlin_zoning_assistant_v2")
 	try:
 		loc = geolocator.geocode(address + ", Berlin, Germany", timeout=10)
 		if loc:
