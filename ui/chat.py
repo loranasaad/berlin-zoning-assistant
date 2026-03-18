@@ -57,7 +57,7 @@ def _validate_input(text: str, s: dict) -> tuple[bool, str]:
 		return False, s["input_too_long"].format(length=len(text), max=MAX_INPUT_LENGTH)
 	return True, ""
 
-def handle_user_input(model: str, language: str, vector_store):
+def handle_user_input(language: str, vector_store):
 	"""
 	Render the chat input box and handle a new message end-to-end:
 	1. Validate the input (length checks)
@@ -71,8 +71,8 @@ def handle_user_input(model: str, language: str, vector_store):
 	s = COMPONENT_STRINGS[language]
  
 	user_input = st.chat_input(
-		"Ask about Berlin zoning regulations..." if language == "en"
-		else "Frage zur Berliner Bebauungsordnung stellen..."
+		"Frage zur Berliner Bebauungsordnung stellen..." if language == "de"
+		else "Ask about Berlin zoning regulations..."
 	)
  
 	if not user_input:
@@ -101,16 +101,19 @@ def handle_user_input(model: str, language: str, vector_store):
  
 	# Step 4: Run the agent
 	with st.spinner(s["thinking"]):
-		result = run_agent(
+		answer_stream, get_result = run_agent(
 			user_input=user_input,
-			model_name=model,
 			language=language,
 			chat_history=st.session_state.chat_history[:-1],
 			vector_store=vector_store,
 		)
- 
+
 	# Step 5: Show assistant response
-	render_chat_message("assistant", result["answer"])
+	with st.chat_message("assistant"):
+		streamed_text = st.write_stream(answer_stream)
+	
+	result = get_result()
+
 	render_technical_details(
 		tool_calls=result["tool_calls"],
 		source_chunks=result["sources"],
@@ -120,13 +123,13 @@ def handle_user_input(model: str, language: str, vector_store):
 	)
 	# Step 6: Add assistant response to history
 	st.session_state.chat_history.append({
-		"role": "assistant",
-		"content": result["answer"],
+		"role":		"assistant",
+		"content":	streamed_text,
 	})
 	st.session_state.chat_metadata.append({
-		"tool_calls": result["tool_calls"],
-		"sources": result["sources"],
-		"token_usage": result["token_usage"],
+		"tool_calls":	result["tool_calls"],
+		"sources":		result["sources"],
+		"token_usage":	result["token_usage"],
 	})
  
 	update_cost_tracker(result["token_usage"])

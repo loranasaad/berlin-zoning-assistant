@@ -5,7 +5,7 @@ from tools.buildable_area import calculate_buildable_area
 from tools.parking import calculate_parking_requirements
 from tools.construction_cost import estimate_construction_cost
 from tools.demographics import get_demographics, get_district_from_address
-from data.zoning_rules import (  # ✅ CHANGED: imported from data layer
+from data.zoning_rules import (
 	ZONE_TO_BUILDING_TYPE,
 	INNER_CITY_DISTRICTS,
 	SETBACK_RULES,
@@ -143,7 +143,6 @@ def get_full_zoning_report(
 		},
 		"buildable_area": buildable,
 		"setbacks": setback,
-		# ✅ CHANGED: parking section of the return dict
 		"parking": {
 			"assumed_use_type":              "wohnen (residential)",
 			"estimated_units":               units_estimate,

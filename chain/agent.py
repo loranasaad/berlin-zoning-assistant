@@ -1,56 +1,137 @@
 import logging
-from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.messages import HumanMessage, AIMessage, AIMessageChunk, SystemMessage
 from langgraph.prebuilt import create_react_agent
 
 from rag.retriever import retrieve_and_format
-from config import OPENAI_API_KEY, ANTHROPIC_API_KEY, MODELS, TOKEN_COSTS
+from config import ANTHROPIC_API_KEY, MODEL_ID, TOKEN_COSTS
 from chain.prompts import SYSTEM_PROMPTS, TOOLS
 
 logger = logging.getLogger(__name__)
 
 def run_agent(
 		user_input: str,
-		model_name: str,
-		language: str = "en",
+		language: str = "de",
 		chat_history: list[dict] = None,
 		vector_store=None,
-) -> dict:
+):
+	"""
+	Run the ReAct agent with streaming for the final answer.
+
+	Returns:
+		(stream_generator, get_result_fn)
+
+		- stream_generator: yields final answer text chunks — pass directly to
+		  st.write_stream(). Tool calls and token usage are collected as side
+		  effects while the stream is consumed.
+		- get_result_fn: call AFTER the stream is fully consumed to get
+		  { answer, sources, tool_calls, token_usage }.
+		  token_usage reflects ALL Claude calls: classifier + translation + agent.
+	"""
 	if chat_history is None:
 		chat_history = []
 	
-	context, source_chunks = retrieve_and_format(user_input, vector_store, language)
+	context, source_chunks, retriever_usage = retrieve_and_format(user_input, vector_store, language)
 	messages = _build_messages(user_input, context, chat_history, language)
 
-	llm = get_llm(model_name)
-	agent = create_react_agent(llm, TOOLS)
-
-	try:
-		result = agent.invoke({"messages": messages})
-	except Exception as e:
-		logger.error(f"Agent error: {e}")
-		return {
-			"answer": f"An error occurred: {str(e)}",
-			"sources": [],
-			"tool_calls": [],
-			"token_usage": None,
-		}
-	
-	answer, tool_calls = _parse_agent_result(result)
-
-	token_usage = estimate_token_usage(
-		messages=messages,
-		answer=answer,
-		model_name=MODELS.get(model_name, ""),
+	llm = ChatAnthropic(
+		model=MODEL_ID,
+		anthropic_api_key=ANTHROPIC_API_KEY,
+		temperature=0.2,
 	)
+	agent = create_react_agent(llm, TOOLS)
+	
+	tool_calls_map: dict[str, dict] = {}
+	full_answer_parts: list[str] = []
+	stream_error: list[str] = []
+	agent_usage: dict = {"input_tokens": 0, "output_tokens": 0}
 
-	return {
-		"answer": answer,
-		"sources": source_chunks,
-		"tool_calls": tool_calls,
-		"token_usage": token_usage,
-	}
+	def answer_stream():
+		try:
+			for chunk, _ in agent.stream(
+				{"messages": messages},
+				stream_mode="messages"
+			):
+				# Accumulate actual token counts across all ReAct loop iterations
+				usage = getattr(chunk, "usage_metadata", None)
+				if usage:
+					agent_usage["input_tokens"]  += usage.get("input_tokens",  0)
+					agent_usage["output_tokens"] += usage.get("output_tokens", 0)
+
+				# Tool call request
+				if isinstance(chunk, AIMessageChunk) and chunk.tool_calls:
+					for tc in chunk.tool_calls:
+						if tc.get("name"):
+							tool_calls_map[tc["id"]] = {
+								"tool":   tc["name"],
+								"input":  tc["args"],
+								"output": None,
+							}
+				# Tool result
+				elif hasattr(chunk, "tool_call_id") and chunk.tool_call_id:
+					tid = chunk.tool_call_id
+					if tid in tool_calls_map:
+						tool_calls_map[tid]["output"] = chunk.content
+
+				# Final answer chunk — streamed text
+				elif (
+					isinstance(chunk, AIMessageChunk)
+					and not getattr(chunk, "tool_calls", None)
+				):
+					text = _extract_text(chunk.content)
+					if text:
+						full_answer_parts.append(text)
+						yield text
+		except Exception as e:
+			logger.error(f"Agent streaming error: {e}")
+			error_msg = f"Ein Fehler ist aufgetreten: {str(e)}"
+			stream_error.append(error_msg)
+			yield error_msg
+		
+	def get_result() -> dict:
+		full_answer = "".join(full_answer_parts) or (stream_error[0] if stream_error else "")
+		tool_calls  = list(tool_calls_map.values())
+
+		total_input  = retriever_usage["input_tokens"]  + agent_usage["input_tokens"]
+		total_output = retriever_usage["output_tokens"] + agent_usage["output_tokens"]
+
+		input_cost  = (total_input  / 1000) * TOKEN_COSTS["input"]
+		output_cost = (total_output / 1000) * TOKEN_COSTS["output"]
+
+		logger.info(
+			f"Total tokens — input: {total_input} "
+			f"(retriever: {retriever_usage['input_tokens']} + "
+			f"agent: {agent_usage['input_tokens']}), "
+			f"output: {total_output} "
+			f"(retriever: {retriever_usage['output_tokens']} + "
+			f"agent: {agent_usage['output_tokens']})"
+		)
+
+		token_usage = {
+			"input_tokens":       total_input,
+			"output_tokens":      total_output,
+			"total_tokens":       total_input + total_output,
+			"estimated_cost_usd": round(input_cost + output_cost, 5),
+		}
+		return {
+			"answer":      full_answer,
+			"sources":     source_chunks,
+			"tool_calls":  tool_calls,
+			"token_usage": token_usage,
+		}
+
+	return answer_stream(), get_result
+
+# Handles Anthropic's streaming content format — plain string or list of blocks
+def _extract_text(content) -> str:
+	if isinstance(content, str):
+		return content
+	if isinstance(content, list):
+		return "".join(
+			block.get("text", "") for block in content
+			if isinstance(block, dict) and block.get("type") == "text"
+		)
+	return ""
 
 def _build_messages(
 		user_input: str,
@@ -59,34 +140,14 @@ def _build_messages(
 		language: str,
 ) -> list:
 	"""Build the full messages list: system prompt + chat history + current user message."""
-	system_prompt = SYSTEM_PROMPTS.get(language, SYSTEM_PROMPTS["en"])
+	system_prompt = SYSTEM_PROMPTS.get(language, SYSTEM_PROMPTS["de"])
 	system_with_context = system_prompt.replace("{context}", context)
 	messages = [SystemMessage(content=system_with_context)]
-	messages += format_chat_history(chat_history)
+	messages += _format_chat_history(chat_history)
 	messages.append(HumanMessage(content=user_input))
 	return messages
 
-def get_llm(model_name: str):
-	"""Return the correct LLM instance based on the model name."""
-	model_id = MODELS.get(model_name)
-	if not model_id:
-		raise ValueError(f"Unknown model: {model_name}")
-	if "gpt" in model_id:
-		return ChatOpenAI(
-			model=model_id,
-			openai_api_key=OPENAI_API_KEY,
-			temperature=0.2,
-		)
-	elif "claude" in model_id:
-		return ChatAnthropic(
-			model=model_id,
-			anthropic_api_key=ANTHROPIC_API_KEY,
-			temperature=0.2,
-		)
-	else:
-		raise ValueError(f"No matching provider for model: {model_id}")
-
-def format_chat_history(history: list[dict]) -> list:
+def _format_chat_history(history: list[dict]) -> list:
 	"""Convert chat history dicts into LangChain message objects."""
 	messages = []
 	for msg in history:
@@ -95,66 +156,3 @@ def format_chat_history(history: list[dict]) -> list:
 		elif msg["role"] == "assistant":
 			messages.append(AIMessage(content=msg["content"]))
 	return messages
-
-def _parse_agent_result(result: dict) -> tuple[str, list]:
-	"""Extract the final answer and tool calls from the agent's raw message list."""
-	answer = ""
-	tool_calls = []
-
-	for msg in result["messages"]:
-		# This is an AIMessage where the model decided to call a tool.
-		# It contains the tool name and arguments but no output yet — the tool hasn't run yet
-		if hasattr(msg, "tool_calls") and msg.tool_calls:
-			for tc in msg.tool_calls:
-				tool_calls.append({
-					"tool": tc["name"],
-					"input": tc["args"],
-					"output": None,
-					"_id": tc.get("id"),
-				})
-		# This is a ToolMessage — the result that came back after the tool ran.
-		# We match it to its corresponding tool call using tool_call_id and fill in the output.
-		elif hasattr(msg, "name") and msg.name:
-			tool_call_id = getattr(msg, "tool_call_id", None)
-			if tool_call_id:
-				for tc in tool_calls:
-					if tc.get("_id") == tool_call_id:
-						tc["output"] = msg.content
-						break
-			# Fallback for older LangChain version.	Fill in the first tool call that still has output = None
-			else:
-				for tc in tool_calls:
-					if tc["output"] is None:
-						tc["output"] = msg.content
-						break
-		# This is the final AIMessage — the model's actual text response to the user after all tools have run. 
-		# We know it's the final answer because it's an AIMessage with no tool calls attached.
-		elif isinstance(msg, AIMessage) and not getattr(msg, "tool_calls", None):
-			answer = msg.content
-
-	for tc in tool_calls:
-		tc.pop("_id", None)
-	
-	return answer, tool_calls
-
-def estimate_token_usage(
-		messages: list,
-		answer: str,
-		model_name: str,
-) -> dict:
-	"""Estimate token usage and cost for a single exchange."""
-	all_input_text = "".join(
-		msg.content if isinstance(msg.content, str) else ""
-		for msg in messages
-	)
-	input_tokens = len(all_input_text) // 4
-	output_tokens = len(answer) // 4
-	costs = TOKEN_COSTS.get(model_name, {"input": 0.0004, "output": 0.0016})
-	input_cost = (input_tokens / 1000) * costs["input"]
-	output_cost = (output_tokens / 1000) * costs["output"]
-	return {
-		"input_tokens": input_tokens,
-		"output_tokens": output_tokens,
-		"total_tokens": input_tokens + output_tokens,
-		"estimated_cost_usd": round(input_cost + output_cost, 5),
-	}

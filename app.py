@@ -26,7 +26,6 @@ def load_vector_store():
 def main():
 	settings = render_sidebar()
 	language = settings["language"]
-	model = settings["model"]
 
 	vector_store = load_vector_store()
 	init_chat_state()
@@ -36,7 +35,7 @@ def main():
 	else:
 		render_chat_history(language)
 	
-	handle_user_input(model, language, vector_store)
+	handle_user_input(language, vector_store)
 
 if __name__ == "__main__":
 	main()

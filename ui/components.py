@@ -224,7 +224,6 @@ def _render_sources_tab(source_chunks: list, s: dict):
 		source = chunk.metadata.get("source", "Unknown")
 		page = chunk.metadata.get("page", "")
 		page_info = f" — {s['sources_page']} {page + 1}" if page != "" else ""
-		# ✅ CHANGED: replaced truncated st.caption preview with a collapsible expander
 		with st.expander(f"{i}. {source}{page_info}"):
 			st.caption(chunk.page_content)
 

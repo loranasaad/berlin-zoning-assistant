@@ -78,7 +78,7 @@ COMPONENT_STRINGS = {
 		"park_step1_note":			"⚠️ Standard assumption: **{size} m² per unit**. Ask to recalculate with a different unit size (e.g. 'use 65m² per unit').",
 		"park_step2":				"**Step 2 — Apply bike parking ratios (AV Stellplätze 2021):**",
 		"park_source":				"Source",
-		"park_no_car_min":			"ℹ️ Berlin abolished the general car parking minimum (Stellplatzpflicht) in 2021 (§49 BauO Bln). No minimum number of general car spaces is legally required.",  # ✅ NEW
+		"park_no_car_min":			"ℹ️ Berlin abolished the general car parking minimum (Stellplatzpflicht) in 2021 (§49 BauO Bln). No minimum number of general car spaces is legally required.",
 		"park_regulation":			"Regulation",
 		# Construction cost card
 		"cost_title":				"#### 🏗️ Construction Cost Estimate",
@@ -180,7 +180,7 @@ COMPONENT_STRINGS = {
 		"park_step1_note":			"⚠️ Standardannahme: **{size} m² pro Einheit**. Neuberechnung mit anderer Einheitsgröße auf Anfrage.",
 		"park_step2":				"**Schritt 2 — Fahrradstellplatzquoten anwenden (AV Stellplätze 2021):**",
 		"park_source":				"Quelle",
-		"park_no_car_min":			"ℹ️ Berlin hat die allgemeine Kfz-Stellplatzpflicht 2021 abgeschafft (§49 BauO Bln). Es gibt keine gesetzliche Mindestanzahl an allgemeinen Kfz-Stellplätzen.",  # ✅ NEW
+		"park_no_car_min":			"ℹ️ Berlin hat die allgemeine Kfz-Stellplatzpflicht 2021 abgeschafft (§49 BauO Bln). Es gibt keine gesetzliche Mindestanzahl an allgemeinen Kfz-Stellplätzen.",
 		"park_regulation":			"Vorschrift",
 		# Construction cost card
 		"cost_title":				"#### 🏗️ Baukostenschätzung",

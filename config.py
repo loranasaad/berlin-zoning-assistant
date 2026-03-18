@@ -1,44 +1,47 @@
 import os
+import streamlit as st
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# API Keys (loaded from .env, never hardcoded)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-BRAVE_API_KEY = os.getenv("BRAVE_API_KEY")
+# Makes the same config.py work locally and on share.streamlit.io
+def _get_secret(key: str) -> str | None:
+	try:
+		return st.secrets[key]
+	except Exception:
+		return os.getenv(key)
+
+# API Keys
+ANTHROPIC_API_KEY = _get_secret("ANTHROPIC_API_KEY")
+VOYAGE_API_KEY    = _get_secret("VOYAGE_API_KEY")
 
 # Language options
 LANGUAGES = {
-    "English": "en",
-    "Deutsch": "de",
+	"Deutsch": "de",
+	"English": "en",
 }
 
-# Model options
-MODELS = {
-    "GPT-4.1 mini (OpenAI)": "gpt-4.1-mini",
-	"Claude Sonnet 4.6 (Anthropic)":  "claude-sonnet-4-6",
-}
+DEFAULT_LANGUAGE = "de"
 
-# Default model
-DEFAULT_MODEL = "GPT-4.1 mini (OpenAI)"
+# Models
+MODEL_ID = "claude-sonnet-4-6"
 
-# Embedding model
-EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_MODEL = "voyage-law-2"
+
 
 # ChromaDB
-CHROMA_DB_PATH = "./chroma_db"
-CHROMA_COLLECTION_NAME = "berlin_zoning"
+CHROMA_DB_PATH			= "./chroma_db"
+CHROMA_COLLECTION_NAME	= "berlin_zoning"
 
 # RAG settings
-CHUNK_SIZE = 2000
-CHUNK_OVERLAP = 200
-TOP_K_RESULTS = 6   # Number of chunks to retrieve per query
+CHUNK_SIZE		= 2000
+CHUNK_OVERLAP	= 200
+TOP_K_RESULTS	= 6   # Number of chunks to retrieve per query
 
 # Pricing (USD per 1K tokens) for cost tracker
 TOKEN_COSTS = {
-    "gpt-4.1-mini": {"input": 0.0004, "output": 0.0016},
-    "claude-sonnet-4-6": {"input": 0.003, "output": 0.015},
+	"input":  0.003,
+	"output": 0.015,
 }
 
 # Data paths

@@ -1,5 +1,5 @@
 import streamlit as st
-from config import MODELS, DEFAULT_MODEL, LANGUAGES
+from config import LANGUAGES, DEFAULT_LANGUAGE, MODEL_ID
 from ui.strings import SIDEBAR_STRINGS
 
 def render_sidebar() -> dict:
@@ -15,7 +15,6 @@ def render_sidebar() -> dict:
 		_render_about(s)
 	return {
 		"language": st.session_state.language,
-		"model": st.session_state.model,
 	}
 
 def _init_session_state():
@@ -25,8 +24,7 @@ def _init_session_state():
 		"total_cost_usd": 0.0,
 		"chat_history": [],
 		"chat_metadata": [],
-		"language": "en",
-		"model": DEFAULT_MODEL,
+		"language": DEFAULT_LANGUAGE,
 	}
 	for key, value in defaults.items():
 		if key not in st.session_state:
@@ -42,12 +40,7 @@ def _render_settings(s: dict) -> dict:
 	)
 	st.session_state.language = LANGUAGES[selected_lang_label]
 	s = SIDEBAR_STRINGS[st.session_state.language]
-	selected_model = st.selectbox(
-		s["model_label"],
-		options=list(MODELS.keys()),
-		index=list(MODELS.keys()).index(st.session_state.model),
-	)
-	st.session_state.model = selected_model
+	st.caption(f"Modell: `{MODEL_ID}`")
 	return s
 
 def _render_cost_tracker(s: dict):
