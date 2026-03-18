@@ -2,7 +2,7 @@
 
 An AI agent that helps architects, engineers, and planners navigate Berlin's building codes, zoning regulations, and planning requirements. Enter any Berlin address to get a complete zoning report — zone type, buildable area, parking requirements, construction cost estimate, and district demographics — all grounded in official regulation text via RAG.
 
-**[→ Live Demo](https://share.streamlit.io)** <!-- replace with your Streamlit Cloud URL --> — password protected, available on request
+**[→ Live Demo](https://berlin-zoning-assistant-ahtnktgz7gympcspnrquct.streamlit.app)**  — password protected, available on request
 
 ---
 
