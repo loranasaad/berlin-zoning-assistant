@@ -8,16 +8,17 @@ COMPONENT_STRINGS = {
 		"thinking":					"Thinking...",
 		# Welcome
 		"welcome_title": 			"🏗️ Berlin Building & Zoning Assistant",
-		"welcome_text": (
+"welcome_text": (
 			"Ask me anything about Berlin's zoning regulations, building codes, "
 			"and planning requirements. I can also calculate buildable areas, "
 			"parking requirements, construction costs, and look up demographics "
 			"for any Berlin address.\n\n"
 			"**Try asking:**\n"
-			"- *What can I build on a 600m² WA plot in Prenzlauer Berg?*\n"
-			"- *How many parking spaces do I need for a 1200m² office building in Mitte?*\n"
-			"- *What are the setback rules for a MI zone?*\n"
-			"- *Estimate construction costs for a 5-storey apartment building in Kreuzberg*"
+			"- *What are the zoning rules and demographics for Kurfürstendamm 90?*\n"
+			"- *What are the setback regulations for a WA zone?*\n"
+			"- *Estimate construction costs for a 4-storey apartment building at Eulerstraße 6.*\n"
+			"- *How many accessible car parking spaces are required for an office building under BauO Bln?*\n"
+			"- *How many bike parking spaces are required for a new apartment building at Schwedter Straße 13, 10119?*"
 		),
 		# Parcel fields
 		"parcel_area":				"Official Area",
@@ -116,10 +117,11 @@ COMPONENT_STRINGS = {
 			"Stellplatzbedarfe, Baukosten berechnen und demografische Daten "
 			"für jede Berliner Adresse abrufen.\n\n"
 			"**Beispielanfragen:**\n"
-			"- *Was kann ich auf einem 600m² WA-Grundstück in Prenzlauer Berg bauen?*\n"
-			"- *Wie viele Stellplätze brauche ich für ein 1200m² Bürogebäude in Mitte?*\n"
-			"- *Welche Abstandsregeln gelten in einem MI-Gebiet?*\n"
-			"- *Baukosten schätzen für ein 5-geschossiges Wohngebäude in Kreuzberg*"
+			"- *Welche Bebauungsregeln und Demografiedaten gibt es für den Kurfürstendamm 90?*\n"
+			"- *Welche Abstandsregeln gelten in einem WA-Gebiet?*\n"
+			"- *Baukosten schätzen für ein 4-geschossiges Wohngebäude in der Eulerstraße 6.*\n"
+			"- *Wie viele barrierefreie Kfz-Stellplätze sind für ein Bürogebäude nach BauO Bln erforderlich?*\n"
+			"- *Wie viele Fahrradstellplätze sind für ein neues Wohngebäude in der Schwedter Straße 13, 10119 erforderlich?*"
 		),
 		# Parcel fields
 		"parcel_area":				"Amtliche Fläche (m²)",
