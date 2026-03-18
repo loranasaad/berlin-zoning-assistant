@@ -2,7 +2,7 @@
 
 An AI agent that helps architects, engineers, and planners navigate Berlin's building codes, zoning regulations, and planning requirements. Enter any Berlin address to get a complete zoning report — zone type, buildable area, parking requirements, construction cost estimate, and district demographics — all grounded in official regulation text via RAG.
 
-**[→ Live Demo](https://share.streamlit.io)** <!-- replace with your Streamlit Cloud URL -->
+**[→ Live Demo](https://share.streamlit.io)** <!-- replace with your Streamlit Cloud URL --> — password protected, available on request
 
 ---
 
@@ -104,6 +104,7 @@ Create a `.env` file in the project root:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 VOYAGE_API_KEY=pa-...
+APP_PASSWORD=your-password
 ```
 
 Voyage AI offers a free tier (50M tokens/month) at [dash.voyageai.com](https://dash.voyageai.com).
@@ -135,6 +136,7 @@ The app is ready for [share.streamlit.io](https://share.streamlit.io). Add your 
 ```toml
 ANTHROPIC_API_KEY = "sk-ant-..."
 VOYAGE_API_KEY = "pa-..."
+APP_PASSWORD = "your-password"
 ```
 
 Note: Streamlit Cloud has an ephemeral filesystem. The vector store is rebuilt on each cold start (~30 seconds on first query per session).

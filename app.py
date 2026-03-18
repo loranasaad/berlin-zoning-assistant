@@ -5,6 +5,7 @@ from rag.embeddings import get_or_create_vector_store
 from ui.sidebar import render_sidebar
 from ui.components import render_welcome
 from ui.chat import init_chat_state, render_chat_history, handle_user_input
+from config import _get_secret
 
 logging.basicConfig(
 	level=logging.INFO,
@@ -17,6 +18,24 @@ st.set_page_config(
 	layout="wide",
 	initial_sidebar_state="expanded",
 )
+
+def _check_password() -> bool:
+	"""
+	Simple password gate — protects the app from public token usage.
+	Once authenticated, the state persists for the session.
+	"""
+	if st.session_state.get("authenticated"):
+		return True
+
+	st.title("🏗️ Berliner Bebauungsassistent")
+	pwd = st.text_input("Passwort", type="password")
+	if st.button("Anmelden"):
+		if pwd == _get_secret("APP_PASSWORD"):
+			st.session_state.authenticated = True
+			st.rerun()
+		else:
+			st.error("Falsches Passwort")
+	return False
 
 @st.cache_resource(show_spinner=False)
 def load_vector_store():
