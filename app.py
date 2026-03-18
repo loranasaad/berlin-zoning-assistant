@@ -39,10 +39,12 @@ def _check_password() -> bool:
 
 @st.cache_resource(show_spinner=False)
 def load_vector_store():
-	with st.spinner("Loading knowledge base... (first run may take ~30 seconds)"):
+	with st.spinner("Wissensdatenbank wird geladen... (erster Start: ~30 Sekunden)"):
 		return get_or_create_vector_store()
 
 def main():
+	if not _check_password():
+		st.stop()
 	settings = render_sidebar()
 	language = settings["language"]
 
